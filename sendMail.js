@@ -13,8 +13,10 @@ let transporter = nodemailer.createTransport({
 
 // 4. Function to send emails
 const sendEmail = async (recipient, subject, message, attachmentPath) => {
+  console.log(recipient);
+  
     let mailOptions = {
-      from: 'vcrohithuta@gmail.com',
+      from: 'vcrohithuta.p@gmail.com',
       to: recipient,
       subject: subject,
       html: message,
