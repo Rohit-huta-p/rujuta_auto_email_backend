@@ -6,77 +6,68 @@ const xlsx = require('xlsx');
 const path = require('path');
 const cors = require('cors')
 app.use(cors())
-const cron = require('node-cron');
 const sendMail = require('./sendMail');
 const upload = multer({ dest: 'uploads/' }); // Save to 'uploads/' directory
 
-// app.post('/upload', upload.single('file'), async (req, res) => {
-//     const file = req.file;
-    
-//     if (!file) {
-//       return res.status(400).send('No file uploaded.');
-//     }
-  
-//     const attachmentPath = path.join(__dirname, 'assets', 'contacts_2.xlsx'); // Path to the attachment
-
-//     // Move file to a new location
-//     const newLocation = path.join(__dirname, 'uploads', file.originalname);
-//     fs.rename(file.path, newLocation, async (err) => {
-//       if (err) {
-//         return res.status(500).send('Error saving file.');
-//       }
-      
-//       try {
-//         // Load the Excel file
-//         const workbook = xlsx.readFile(newLocation);
-//         const sheetName = workbook.SheetNames[0]; // Get the first sheet
-//         const worksheet = workbook.Sheets[sheetName];
-//         const contacts = xlsx.utils.sheet_to_json(worksheet);
-//         console.log(contacts);
-        
-//         // Iterate through contacts and send emails
-//         for (const contact of contacts) {
-//           const email = contact.emails; // Replace with your actual column name in the Excel sheet
-//           const name = contact.name;   // Replace with your actual column name
-        
-//           // Customize the email content
-//           const subject = `Hello ${name}, This is a Test Email`;
-//           const message = `Dear ${name},\n\nThis is an automated message for email automation testing.\n\nBest regards,\nYour Company`;
-        
-//           // Send email to each contact
-//           await sendMail(email, subject, message,attachmentPath );
-//         }
-
-//         res.send('File uploaded and emails sent.');
-//       } catch (error) {
-//         console.error('Error processing file or sending emails:', error);
-//         res.status(500).send('Error processing file or sending emails.');
-//       }
-//     });
-// });
 
 
-
-const attachmentPath = path.join(__dirname, 'assets', 'contacts_2.xlsx'); // Path to the attachment
+const clients = path.join(__dirname, 'uploads', 'contacts.xlsx'); 
+const attachmentPath = path.join(__dirname, 'assets', 'contacts_2.xlsx');
 
 // Email sending function
 const sendEmailsFromContacts = async () => {
   try {
-    // Load the Excel file
-    const workbook = xlsx.readFile(attachmentPath);
-    const sheetName = workbook.SheetNames[0]; // Get the first sheet
-    const worksheet = workbook.Sheets[sheetName];
-    const contacts = xlsx.utils.sheet_to_json(worksheet);
-    console.log(contacts);
+  // Load the Excel file for contacts
+  const contactsWorkbook = xlsx.readFile(clients);
+  const contactsSheetName = contactsWorkbook.SheetNames[0]; // Get the first sheet
+  const contactsWorksheet = contactsWorkbook.Sheets[contactsSheetName];
+  const contacts = xlsx.utils.sheet_to_json(contactsWorksheet);
+  console.log("contacts", contacts);
+
+  // Load the Excel file for ticket status (contacts_2.xlsx)
+  const ticketStatusWorkbook = xlsx.readFile(attachmentPath); // Use 'ticketStatusWorkbook' instead of 'workbook'
+  const ticketSheetName = ticketStatusWorkbook.SheetNames[0]; // Get the first sheet
+  const ticketWorksheet = ticketStatusWorkbook.Sheets[ticketSheetName]; // Correct reference to 'ticketStatusWorkbook'
+  const content = xlsx.utils.sheet_to_json(ticketWorksheet);
+  const headers = Object.keys(content[0]);
+
+    console.log("contacfsdfsdft_2",content);
+
+    // console.log("Headers",headers);
+    
+    
+
 
     // Iterate through contacts and send emails
     for (const contact of contacts) {
       const email = contact.emails; // Replace with your actual column name in the Excel sheet
       const name = contact.name; // Replace with your actual column name
-
+      console.log(headers);
+      
       // Customize the email content
       const subject = `Hello ${name}, This is a Test Email`;
-      const message = `Dear ${name},\n\nThis is an automated message for email automation testing.\n\nBest regards,\nYour Company`;
+      const message = `
+        <h5>Dear ${name},\n\nThis is Ticket Status of today </h5>
+        <table border='1'>
+          <thead>
+         
+            ${headers.map(heading => `<th>${heading}</th>`).join('')}
+          
+          </thead>
+          <tbody>
+          ${content
+            .filter(row => Object.values(row).some(value => value)) // Filter out empty rows
+            .map(row => (
+              `<tr>
+                ${headers.map(header => `<td>${row[header] || ''}</td>`).join('')} 
+              </tr>`
+            )).join('')}
+          </tbody>
+        </table>
+        <br />
+        <br />
+        <p>Best regards, Your Company</p>
+      `;
 
       // Send email to each contact with the attachment
       await sendMail(email, subject, message, attachmentPath);
@@ -86,12 +77,10 @@ const sendEmailsFromContacts = async () => {
   }
 };
 
-// Schedule the email to be sent at 9:00 AM every day
 cron.schedule('0 9 * * *', () => {
-    console.log('Sending daily emails at 4:21 PM');
-    sendEmailsFromContacts();
+  console.log('Sending daily emails at 4:21 PM');
+  sendEmailsFromContacts();
 });
-
 
 
 

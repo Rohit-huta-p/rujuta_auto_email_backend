@@ -17,7 +17,7 @@ const sendEmail = async (recipient, subject, message, attachmentPath) => {
       from: 'vcrohithuta@gmail.com',
       to: recipient,
       subject: subject,
-      text: message,
+      html: message,
       attachments: [
         {
             filename: path.basename(attachmentPath),
